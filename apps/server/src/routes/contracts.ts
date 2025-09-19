@@ -1,6 +1,7 @@
 import { Router } from "express";
-import { PrismaClient } from "@prisma/client";
-import { ContractStatus } from "prisma/generated";
+import { PrismaClient, ContractStatus } from "prisma/generated";
+
+import { notifyContractFinalized } from "../lib/socket";
 
 const prisma = new PrismaClient();
 const router: Router = Router();
@@ -87,7 +88,10 @@ router.put("/:id", async (req, res) => {
       data: { clientName, data, status },
     });
 
-    // TODO: Emit WebSocket event if status changes to FINALIZED
+    if (status === ContractStatus.FINALIZED) {
+      notifyContractFinalized(id);
+    }
+
     res.json(contract);
   } catch (err: any) {
     res.status(400).json({ error: err.message });

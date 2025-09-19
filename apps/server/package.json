@@ -14,23 +14,25 @@
     "db:migrate": "prisma migrate dev"
   },
   "dependencies": {
-    "dotenv": "^17.2.1",
-    "zod": "^4.0.2",
-    "express": "^5.1.0",
-    "cors": "^2.8.5",
     "@prisma/client": "^6.15.0",
-    "better-auth": "^1.3.10"
+    "better-auth": "^1.3.10",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.1",
+    "express": "^5.1.0",
+    "socket.io": "^4.8.1",
+    "zod": "^4.0.2"
   },
   "trustedDependencies": [
     "supabase"
   ],
   "devDependencies": {
-    "tsdown": "^0.15.1",
-    "typescript": "^5.8.2",
-    "@types/express": "^5.0.1",
     "@types/cors": "^2.8.17",
-    "tsx": "^4.19.2",
+    "@types/express": "^5.0.1",
     "@types/node": "^22.13.11",
-    "prisma": "^6.15.0"
+    "@types/socket.io": "^3.0.2",
+    "prisma": "^6.15.0",
+    "tsdown": "^0.15.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.8.2"
   }
 }
