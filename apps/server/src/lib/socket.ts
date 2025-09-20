@@ -27,6 +27,7 @@ export const getIO = (): Server => {
 
 export const notifyContractFinalized = (contractId: string) => {
   if (io) {
+    console.log("Notifying clients about finalized contract:", contractId);
     io.emit("contract:finalized", { contractId });
   }
 };

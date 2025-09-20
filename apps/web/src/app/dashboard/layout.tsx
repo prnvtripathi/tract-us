@@ -12,7 +12,7 @@ export default function DashboardLayout({
         <SidebarProvider>
             <div className="flex min-h-screen">
                 <AppSidebar />
-                <main className="p-4">
+                <main className="flex-grow flex-1 p-4">
                     {children}
                 </main>
             </div>
