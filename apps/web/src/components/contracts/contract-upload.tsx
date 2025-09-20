@@ -99,6 +99,7 @@ export function ContractUpload() {
                             rows={8}
                             {...form.register("data")}
                             placeholder='Enter contract text or {"key":"value"}'
+                            className="resize-none"
                         />
                         {form.formState.errors.data && (
                             <span className="text-sm text-red-500">{form.formState.errors.data.message}</span>

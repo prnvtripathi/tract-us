@@ -3,18 +3,31 @@
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
+import { RefreshCwIcon } from "lucide-react";
 
 export function SearchFilters({ onSearch }: { onSearch?: (filters: any) => void }) {
     const [clientName, setClientName] = useState("");
     const [contractId, setContractId] = useState("");
     const [status, setStatus] = useState("");
 
+    const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        onSearch?.({ clientName, contractId, status });
+    };
+
+    const handleReset = () => {
+        setClientName("");
+        setContractId("");
+        setStatus("");
+        onSearch?.({});
+    };
+
     return (
-        <div className="flex items-center gap-4 mb-4">
+        <form onSubmit={handleSubmit} onReset={handleReset} className="flex items-center gap-2 mb-4">
             <Input placeholder="Client name" value={clientName} onChange={(e) => setClientName(e.target.value)} />
             <Input placeholder="Contract ID" value={contractId} onChange={(e) => setContractId(e.target.value)} />
-            <Select onValueChange={(val) => setStatus(val)}>
+            <Select value={status} onValueChange={(val) => setStatus(val)}>
                 <SelectTrigger className="w-[180px]">
                     <SelectValue placeholder="Status" />
                 </SelectTrigger>
@@ -23,7 +36,12 @@ export function SearchFilters({ onSearch }: { onSearch?: (filters: any) => void 
                     <SelectItem value="FINALIZED">Finalized</SelectItem>
                 </SelectContent>
             </Select>
-            <Button onClick={() => onSearch?.({ clientName, contractId, status })}>Search</Button>
-        </div>
+            <div className="flex gap-2">
+                <Button type="submit">Search</Button>
+                <Button type="reset" variant="outline">
+                    <RefreshCwIcon className="h-4 w-4" />
+                </Button>
+            </div>
+        </form>
     );
 }
