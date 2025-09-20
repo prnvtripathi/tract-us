@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { Home, FileText, UploadCloud, ChevronsLeft, Moon, Sun, Dot, Wifi } from "lucide-react";
+import { Home, FileText, UploadCloud, ChevronsLeft, Moon, Sun, Wifi, LogOutIcon } from "lucide-react";
 import { useSocket } from "@/hooks/useSocket";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -20,7 +20,9 @@ import {
     useSidebar,
 } from "@/components/ui/sidebar";
 import { useTheme } from "next-themes"
+import { useRouter } from "next/navigation";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { authClient } from "@/lib/auth-client";
 
 const menuItems = [
     {
@@ -46,6 +48,7 @@ export function AppSidebar() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const { toggleSidebar } = useSidebar();
     const { theme, setTheme } = useTheme();
+    const router = useRouter();
 
     const handleThemeChange = () => {
         if (theme === "light") {
@@ -54,6 +57,16 @@ export function AppSidebar() {
             setTheme("light");
         }
     };
+
+    async function handleLogout() {
+        await authClient.signOut({
+            fetchOptions: {
+                onSuccess: () => {
+                    router.push("/auth/login");
+                },
+            },
+        });
+    }
 
     return (
         <Sidebar variant="floating" collapsible="icon">
@@ -119,6 +132,12 @@ export function AppSidebar() {
                                 <Moon className="h-4 w-4" />
                             )}
                             <span>Change Theme</span>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                        <SidebarMenuButton tooltip="Logout" onClick={handleLogout}>
+                            <LogOutIcon className="h-4 w-4" />
+                            <span>Log Out</span>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                 </SidebarMenu>
