@@ -3,12 +3,15 @@ import cors from "cors";
 import express from "express";
 import { createServer } from "http";
 import { toNodeHandler } from "better-auth/node";
+import morgan from "morgan";
 
 import { auth } from "./lib/auth";
 import { default as contractsRouter } from "./routes/contracts";
 import { initSocket } from "./lib/socket";
 
 const app = express();
+
+app.use(morgan("dev"));
 
 app.use(
   cors({
