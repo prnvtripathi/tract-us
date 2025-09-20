@@ -1,17 +1,18 @@
 "use client";
 
-import { useContracts, useDeleteContract } from "@/hooks/useContracts";
+import { useContracts } from "@/hooks/useContracts";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { ContractStatus } from "./contract-status";
 import Link from "next/link";
 import { Pencil, Trash2 } from "lucide-react";
+import { ContractEditDialog } from "./contract-edit-dialog";
+import { ContractDeleteDialog } from "./contract-delete-dialog";
 
 export function ContractList({ filters = {} }: { filters?: any }) {
     const [page, setPage] = useState(1);
     const { data, isLoading } = useContracts(filters, page);
-    const deleteContract = useDeleteContract();
 
     if (isLoading) return <p>Loading...</p>;
 
@@ -34,19 +35,12 @@ export function ContractList({ filters = {} }: { filters?: any }) {
                             <TableCell>
                                 <ContractStatus status={c.status} />
                             </TableCell>
-                            <TableCell className="space-x-2">
-                                <Button variant="outline" size="sm" asChild>
-                                    <Link href={`/dashboard/contracts/${c.id}`}>
-                                        <Pencil />
-                                    </Link>
+                            <TableCell className="flex gap-2">
+                                <Button variant="secondary" size="sm" asChild>
+                                    <Link href={`/dashboard/contracts/${c.id}`}>View</Link>
                                 </Button>
-                                <Button
-                                    variant="destructive"
-                                    size="sm"
-                                    onClick={() => deleteContract.mutate(c.id)}
-                                >
-                                    <Trash2 />
-                                </Button>
+                                <ContractEditDialog contract={c} />
+                                <ContractDeleteDialog id={c.id} clientName={c.clientName} />
                             </TableCell>
                         </TableRow>
                     ))}
