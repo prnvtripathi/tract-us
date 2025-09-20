@@ -9,15 +9,16 @@ const router: Router = Router();
 // POST /api/contracts - Upload/create contract
 router.post("/", async (req, res) => {
   try {
-    const { clientName, contractId, data, status } = req.body;
+    const { clientName, data, status } = req.body;
 
     const contract = await prisma.contract.create({
+      // After removing `contractId` from schema, generated types will not require it. Until then,
+      // keep this cast to satisfy types pre-migration.
       data: {
         clientName,
-        contractId,
         data,
         status: status ?? ContractStatus.DRAFT,
-      },
+      } as any,
     });
 
     res.status(201).json(contract);
@@ -32,7 +33,8 @@ router.get("/", async (req, res) => {
     const {
       status,
       clientName,
-      contractId,
+      id,
+      contractId, // deprecated shim
       page = 1,
       pageSize = 10,
     } = req.query as any;
@@ -41,7 +43,9 @@ router.get("/", async (req, res) => {
     if (status) where.status = status;
     if (clientName)
       where.clientName = { contains: clientName, mode: "insensitive" };
-    if (contractId) where.contractId = { equals: contractId };
+    // prefer id filter; support legacy contractId by mapping to id for now
+    if (id) where.id = { equals: id };
+    else if (contractId) where.id = { equals: contractId };
 
     const contracts = await prisma.contract.findMany({
       where,

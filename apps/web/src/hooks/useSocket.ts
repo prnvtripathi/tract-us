@@ -22,7 +22,7 @@ export const useSocket = () => {
     });
 
     s.on("contract:finalized", (payload) => {
-      toast.success(`Contract ${payload.contractId} has been finalized`);
+      toast.success(`Contract ${payload.id} has been finalized`);
     });
 
     setSocket(s);

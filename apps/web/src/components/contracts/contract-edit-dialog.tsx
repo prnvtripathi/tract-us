@@ -28,7 +28,6 @@ import { ContractStatus as StatusBadge } from "./contract-status";
 type Contract = {
     id: string;
     clientName: string;
-    contractId?: string;
     status: "DRAFT" | "FINALIZED";
     data?: Record<string, any> | null;
 };

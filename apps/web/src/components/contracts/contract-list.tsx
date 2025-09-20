@@ -31,7 +31,7 @@ export function ContractList({ filters = {} }: { filters?: any }) {
                     {data?.data?.map((c: any) => (
                         <TableRow key={c.id}>
                             <TableCell>{c.clientName}</TableCell>
-                            <TableCell className="text-muted-foreground">{c.contractId}</TableCell>
+                            <TableCell className="text-muted-foreground">{c.id}</TableCell>
                             <TableCell>
                                 <ContractStatus status={c.status} />
                             </TableCell>

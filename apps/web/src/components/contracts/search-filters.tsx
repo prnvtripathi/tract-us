@@ -8,17 +8,17 @@ import { RefreshCwIcon } from "lucide-react";
 
 export function SearchFilters({ onSearch }: { onSearch?: (filters: any) => void }) {
     const [clientName, setClientName] = useState("");
-    const [contractId, setContractId] = useState("");
+    const [id, setId] = useState("");
     const [status, setStatus] = useState("");
 
     const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        onSearch?.({ clientName, contractId, status });
+    onSearch?.({ clientName, id, status });
     };
 
     const handleReset = () => {
         setClientName("");
-        setContractId("");
+    setId("");
         setStatus("");
         onSearch?.({});
     };
@@ -26,7 +26,7 @@ export function SearchFilters({ onSearch }: { onSearch?: (filters: any) => void 
     return (
         <form onSubmit={handleSubmit} onReset={handleReset} className="flex items-center gap-2 mb-4">
             <Input placeholder="Client name" value={clientName} onChange={(e) => setClientName(e.target.value)} />
-            <Input placeholder="Contract ID" value={contractId} onChange={(e) => setContractId(e.target.value)} />
+            <Input placeholder="Contract ID" value={id} onChange={(e) => setId(e.target.value)} />
             <Select value={status} onValueChange={(val) => setStatus(val)}>
                 <SelectTrigger className="w-[180px]">
                     <SelectValue placeholder="Status" />

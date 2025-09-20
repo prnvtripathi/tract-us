@@ -12,14 +12,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 
-// Function to generate UUID v4
-function generateUUID(): string {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-        const r = Math.random() * 16 | 0;
-        const v = c === 'x' ? r : (r & 0x3 | 0x8);
-        return v.toString(16);
-    });
-}
 
 const contractSchema = z.object({
     clientName: z.string().min(1, "Client name is required"),
@@ -49,13 +41,9 @@ export function ContractUpload() {
             parsedData = { content: values.data };
         }
 
-        // Generate UUID for the contract
-        const contractId = generateUUID();
-
         createContract.mutate(
             {
                 clientName: values.clientName,
-                contractId: contractId,
                 data: parsedData,
                 status: values.status,
             },
