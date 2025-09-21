@@ -7,6 +7,7 @@ import morgan from "morgan";
 
 import { auth } from "./lib/auth";
 import { default as contractsRouter } from "./routes/contracts";
+import { default as aiRouter } from "./routes/ai";
 import { initSocket } from "./lib/socket";
 
 const app = express();
@@ -36,6 +37,7 @@ app.get("/api/healthz", (_req, res) => {
 });
 
 app.use("/api/contracts", contractsRouter);
+app.use("/api/ai", aiRouter);
 
 const port = process.env.PORT || 4000;
 

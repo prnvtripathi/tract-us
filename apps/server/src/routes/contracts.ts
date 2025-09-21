@@ -9,7 +9,7 @@ const router: Router = Router();
 // POST /api/contracts - Upload/create contract
 router.post("/", async (req, res) => {
   try {
-    const { clientName, data, status } = req.body;
+    const { clientName, data, status, userId } = req.body;
 
     const contract = await prisma.contract.create({
       // After removing `contractId` from schema, generated types will not require it. Until then,
@@ -18,6 +18,7 @@ router.post("/", async (req, res) => {
         clientName,
         data,
         status: status ?? ContractStatus.DRAFT,
+        userId,
       } as any,
     });
 
@@ -31,13 +32,17 @@ router.post("/", async (req, res) => {
 router.get("/", async (req, res) => {
   try {
     const {
+      userId,
       status,
       clientName,
       id,
-      contractId, // deprecated shim
       page = 1,
       pageSize = 10,
     } = req.query as any;
+
+    if (!userId) {
+      return res.status(400).json({ error: "Missing userId in request body" });
+    }
 
     const where: any = {};
     if (status) where.status = status;
@@ -45,7 +50,6 @@ router.get("/", async (req, res) => {
       where.clientName = { contains: clientName, mode: "insensitive" };
     // prefer id filter; support legacy contractId by mapping to id for now
     if (id) where.id = { equals: id };
-    else if (contractId) where.id = { equals: contractId };
 
     const contracts = await prisma.contract.findMany({
       where,
@@ -85,10 +89,10 @@ router.get("/:id", async (req, res) => {
 router.put("/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const { clientName, data, status } = req.body;
+    const { clientName, data, status, userId } = req.body;
 
     const contract = await prisma.contract.update({
-      where: { id },
+      where: { id, userId },
       data: { clientName, data, status },
     });
 
@@ -106,7 +110,12 @@ router.put("/:id", async (req, res) => {
 router.delete("/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    await prisma.contract.delete({ where: { id } });
+    let { userId } = req.query;
+    if (Array.isArray(userId)) userId = userId[0];
+    if (typeof userId !== "string") {
+      return res.status(400).json({ error: "Missing or invalid userId" });
+    }
+    await prisma.contract.delete({ where: { id, userId } });
     res.status(204).send();
   } catch (err: any) {
     res.status(400).json({ error: err.message });

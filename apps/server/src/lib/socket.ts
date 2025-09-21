@@ -31,3 +31,10 @@ export const notifyContractFinalized = (id: string) => {
     io.emit("contract:finalized", { id });
   }
 };
+
+export const aiNotify = (event: string, data: any) => {
+  if (io) {
+    console.log(`Emitting event ${event} with data:`, data);
+    io.emit(event, data);
+  }
+};
