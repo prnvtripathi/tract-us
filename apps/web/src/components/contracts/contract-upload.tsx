@@ -1,9 +1,11 @@
 "use client";
 
+import React from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useCreateContract } from "@/hooks/useContracts";
+import { useAnalyzeContract, useCreateContract } from "@/hooks/useContracts";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -23,7 +25,9 @@ type ContractFormValues = z.infer<typeof contractSchema>;
 
 export function ContractUpload() {
     const createContract = useCreateContract();
-
+    const analyzeContract = useAnalyzeContract();
+    const router = useRouter();
+    const [file, setFile] = React.useState<File | null>(null);
     const form = useForm<ContractFormValues>({
         resolver: zodResolver(contractSchema),
         defaultValues: {
@@ -33,7 +37,7 @@ export function ContractUpload() {
         },
     });
 
-    const onSubmit = (values: ContractFormValues) => {
+    const onSubmit = async (values: ContractFormValues) => {
         let parsedData: any;
         try {
             parsedData = JSON.parse(values.data);
@@ -41,22 +45,47 @@ export function ContractUpload() {
             parsedData = { content: values.data };
         }
 
-        createContract.mutate(
-            {
-                clientName: values.clientName,
-                data: parsedData,
-                status: values.status,
-            },
-            {
-                onSuccess: () => {
-                    toast.success("Contract uploaded successfully");
-                    form.reset();
+        if (file) {
+            analyzeContract.mutate(
+                {
+                    clientName: values.clientName,
+                    data: parsedData,
+                    status: values.status,
+                    file,
                 },
-                onError: (err: any) => {
-                    toast.error(err?.message || "Failed to upload contract");
+                {
+                    onSuccess: (body: any) => {
+                        toast.success("Upload started. Redirecting to details...");
+                        form.reset();
+                        setFile(null);
+                        const contractId = body?.contractId;
+                        if (contractId) router.push(`/dashboard/contracts/${contractId}`);
+                    },
+                    onError: (err: any) => {
+                        console.error(err);
+                        toast.error(err?.message || "Failed to upload and analyze file");
+                    },
+                }
+            );
+        } else {
+            createContract.mutate(
+                {
+                    clientName: values.clientName,
+                    data: parsedData,
+                    status: values.status,
                 },
-            }
-        );
+                {
+                    onSuccess: (contract: any) => {
+                        toast.success("Contract uploaded successfully");
+                        form.reset();
+                        if (contract?.id) router.push(`/dashboard/contracts/${contract.id}`);
+                    },
+                    onError: (err: any) => {
+                        toast.error(err?.message || "Failed to upload contract");
+                    },
+                }
+            );
+        }
     };
 
     return (
@@ -94,6 +123,18 @@ export function ContractUpload() {
                         )}
                     </div>
 
+                    {/* Optional File Upload */}
+                    <div className="flex flex-col gap-2">
+                        <Label htmlFor="file">Upload PDF (optional)</Label>
+                        <Input
+                            id="file"
+                            type="file"
+                            accept="application/pdf"
+                            onChange={(e) => setFile(e.target.files?.[0] || null)}
+                        />
+                        <p className="text-xs text-muted-foreground">If provided, the file will be analyzed by AI and progress will be shown on the details page.</p>
+                    </div>
+
                     {/* Status */}
                     <div className="flex flex-col gap-2">
                         <Label>Status</Label>
@@ -115,8 +156,8 @@ export function ContractUpload() {
                     </div>
 
                     {/* Submit */}
-                    <Button type="submit" disabled={createContract.isPending}>
-                        {createContract.isPending ? "Uploading..." : "Upload Contract"}
+                    <Button type="submit" disabled={createContract.isPending || analyzeContract.isPending}>
+                        {createContract.isPending || analyzeContract.isPending ? "Saving..." : file ? "Upload & Analyze" : "Save Contract"}
                     </Button>
                 </form>
             </CardContent>

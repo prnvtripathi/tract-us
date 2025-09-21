@@ -35,7 +35,7 @@ router.post("/analyze", upload.single("file"), async (req, res) => {
         data,
         status: status ?? ContractStatus.DRAFT,
         userId,
-        fileUrl,
+        url: fileUrl,
       } as any,
     });
 
@@ -45,6 +45,7 @@ router.post("/analyze", upload.single("file"), async (req, res) => {
       success: true,
       message: "Analysis started",
       fileUrl,
+      contractId: contract.id,
     });
   } catch (error) {
     console.error("Error uploading file:", error);

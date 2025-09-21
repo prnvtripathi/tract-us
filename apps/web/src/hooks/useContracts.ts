@@ -5,7 +5,6 @@ import { authClient } from "@/lib/auth-client";
 
 const API_URL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:4000";
 
-
 export const useContracts = (filters?: any, page = 1, pageSize = 10) => {
   const { data: session } = authClient.useSession();
   const userId = session?.user?.id as string | undefined;
@@ -137,9 +136,12 @@ export const useDeleteContract = () => {
       if (!userId) {
         throw new Error("Not authenticated");
       }
-      const res = await fetch(`${API_URL}/api/contracts/${id}?userId=${encodeURIComponent(userId)}`, {
-        method: "DELETE",
-      });
+      const res = await fetch(
+        `${API_URL}/api/contracts/${id}?userId=${encodeURIComponent(userId)}`,
+        {
+          method: "DELETE",
+        }
+      );
       if (!res.ok) {
         let message = `Request failed with status ${res.status}`;
         try {
@@ -153,5 +155,55 @@ export const useDeleteContract = () => {
       return id;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["contracts"] }),
+  });
+};
+
+// Analyze a contract by uploading a PDF (optional metadata included)
+export const useAnalyzeContract = () => {
+  const qc = useQueryClient();
+  const { data: session } = authClient.useSession();
+  const userId = session?.user?.id as string | undefined;
+
+  return useMutation({
+    mutationFn: async ({
+      clientName,
+      data,
+      status,
+      file,
+    }: {
+      clientName: string;
+      data: any;
+      status?: "DRAFT" | "FINALIZED";
+      file: File;
+    }) => {
+      if (!userId) {
+        throw new Error("Not authenticated");
+      }
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("clientName", clientName);
+      formData.append("data", JSON.stringify(data ?? {}));
+      formData.append("status", status ?? "DRAFT");
+      formData.append("userId", userId);
+
+      const res = await fetch(`${API_URL}/api/ai/analyze`, {
+        method: "POST",
+        body: formData,
+      });
+      if (!res.ok) {
+        let message = `Request failed with status ${res.status}`;
+        try {
+          const body = await res.json();
+          message = body?.message || body?.error || message;
+        } catch (error) {
+          console.error("Failed to parse error response", error);
+        }
+        throw new Error(message);
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["contracts"] });
+    },
   });
 };

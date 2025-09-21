@@ -14,18 +14,19 @@ export const startContractAnalysis = async (
   contractId: string
 ) => {
   try {
-    aiNotify("ai:processing_started", { userId, fileUrl });
+    aiNotify("ai:processing_started", { userId, fileUrl, contractId });
 
     // Step 1: Extract text from PDF
     const contractText = await extractTextFromPdf(fileUrl);
     aiNotify("ai:extraction_progress", {
       userId,
+      contractId,
       progress: "Text extraction complete",
     });
 
     // Step 2: Send to Groq AI
     const response = await groq.chat.completions.create({
-      model: "openai/gpt-oss-20b",
+      model: "llama-3.3-70b-versatile",
       messages: [
         { role: "system", content: analyzePrompt },
         {
@@ -34,10 +35,9 @@ export const startContractAnalysis = async (
         },
       ],
       temperature: 1,
-      max_completion_tokens: 8192,
+      max_completion_tokens: 1024,
       top_p: 1,
       stream: false,
-      reasoning_effort: "medium",
       response_format: {
         type: "json_object",
       },
@@ -56,13 +56,15 @@ export const startContractAnalysis = async (
 
     aiNotify("ai:confidence_update", {
       userId,
+      contractId,
       confidence: parsed.confidence_score || null,
     });
     aiNotify("ai:suggestion_generated", {
       userId,
+      contractId,
       suggestions: parsed.risk_assessment?.recommendations || [],
     });
-    aiNotify("ai:analysis_complete", { userId, analysis: parsed });
+    aiNotify("ai:analysis_complete", { userId, contractId, analysis: parsed });
 
     // Step 3: Save analysis to database
     await prisma.contract.update({
@@ -73,6 +75,10 @@ export const startContractAnalysis = async (
     });
   } catch (error) {
     console.error("AI Analysis error:", error);
-    aiNotify("ai:analysis_complete", { userId, error: "AI analysis failed" });
+    aiNotify("ai:analysis_complete", {
+      userId,
+      contractId,
+      error: "AI analysis failed",
+    });
   }
 };

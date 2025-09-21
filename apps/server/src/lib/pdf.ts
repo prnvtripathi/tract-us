@@ -1,9 +1,4 @@
 import { Mistral } from "@mistralai/mistralai";
-/**
- * Analyze PDF using Mistral OCR
- * @param fileUrl URL to the PDF file (e.g., from S3)
- * @returns Extracted plain text from the PDF
- */
 
 const apiKey = process.env.MISTRAL_API_KEY;
 
@@ -18,12 +13,16 @@ export const extractTextFromPdf = async (fileUrl: string): Promise<string> => {
         documentUrl: fileUrl,
       },
       includeImageBase64: false,
-      documentAnnotationFormat: { type: "text", jsonSchema: null },
     });
 
-    console.log({ ocrResponse });
+    // the reponse has pages array with text content
+    // Content is in ocrResponse.pages[i].markdown
+    // Join all pages' content into a single string
+    const fullText = ocrResponse.pages
+      .map((page) => page.markdown)
+      .join("\n\n--- End of Page ---\n\n");
 
-    return ocrResponse.documentAnnotation || "";
+    return fullText;
   } catch (error) {
     console.error("Error during PDF OCR:", error);
     throw new Error("Failed to extract text from PDF");
