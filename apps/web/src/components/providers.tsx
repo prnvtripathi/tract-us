@@ -16,8 +16,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
 				{children}
 			</QueryProvider>
 			<Toaster
-				position="top-center"
-				richColors
+				position="top-right"
 				closeButton
 			/>
 		</ThemeProvider>

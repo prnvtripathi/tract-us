@@ -1,13 +1,21 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { authClient } from "@/lib/auth-client";
 
 const API_URL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:4000";
 
+
 export const useContracts = (filters?: any, page = 1, pageSize = 10) => {
+  const { data: session } = authClient.useSession();
+  const userId = session?.user?.id as string | undefined;
+
   return useQuery({
     queryKey: ["contracts", filters, page, pageSize],
     queryFn: async () => {
+      if (!userId) {
+        throw new Error("Not authenticated");
+      }
       const params = new URLSearchParams();
       if (filters && typeof filters === "object") {
         Object.entries(filters).forEach(([key, value]) => {
@@ -16,6 +24,7 @@ export const useContracts = (filters?: any, page = 1, pageSize = 10) => {
           }
         });
       }
+      params.set("userId", userId);
       params.set("page", String(page));
       params.set("pageSize", String(pageSize));
       const res = await fetch(`${API_URL}/api/contracts?${params.toString()}`);
@@ -31,6 +40,7 @@ export const useContracts = (filters?: any, page = 1, pageSize = 10) => {
       }
       return res.json();
     },
+    enabled: !!userId,
   });
 };
 
@@ -57,12 +67,17 @@ export const useContract = (id: string) => {
 
 export const useCreateContract = () => {
   const qc = useQueryClient();
+  const { data: session } = authClient.useSession();
+  const userId = session?.user?.id as string | undefined;
   return useMutation({
     mutationFn: async (data: any) => {
+      if (!userId) {
+        throw new Error("Not authenticated");
+      }
       const res = await fetch(`${API_URL}/api/contracts`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, userId }),
       });
       if (!res.ok) {
         let message = `Request failed with status ${res.status}`;
@@ -82,12 +97,17 @@ export const useCreateContract = () => {
 
 export const useUpdateContract = () => {
   const qc = useQueryClient();
+  const { data: session } = authClient.useSession();
+  const userId = session?.user?.id as string | undefined;
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      if (!userId) {
+        throw new Error("Not authenticated");
+      }
       const res = await fetch(`${API_URL}/api/contracts/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, userId }),
       });
       if (!res.ok) {
         let message = `Request failed with status ${res.status}`;
@@ -110,9 +130,14 @@ export const useUpdateContract = () => {
 
 export const useDeleteContract = () => {
   const qc = useQueryClient();
+  const { data: session } = authClient.useSession();
+  const userId = session?.user?.id as string | undefined;
   return useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(`${API_URL}/api/contracts/${id}`, {
+      if (!userId) {
+        throw new Error("Not authenticated");
+      }
+      const res = await fetch(`${API_URL}/api/contracts/${id}?userId=${encodeURIComponent(userId)}`, {
         method: "DELETE",
       });
       if (!res.ok) {
