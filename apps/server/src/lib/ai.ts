@@ -2,12 +2,16 @@ import { Groq } from "groq-sdk";
 import { aiNotify } from "./socket";
 import { extractTextFromPdf } from "@/lib/pdf";
 import { analyzePrompt } from "./prompts";
+import { PrismaClient, ContractStatus } from "prisma/generated";
+
+const prisma = new PrismaClient();
 
 const groq = new Groq();
 
 export const startContractAnalysis = async (
   fileUrl: string,
-  userId: string
+  userId: string,
+  contractId: string
 ) => {
   try {
     aiNotify("ai:processing_started", { userId, fileUrl });
@@ -59,6 +63,14 @@ export const startContractAnalysis = async (
       suggestions: parsed.risk_assessment?.recommendations || [],
     });
     aiNotify("ai:analysis_complete", { userId, analysis: parsed });
+
+    // Step 3: Save analysis to database
+    await prisma.contract.update({
+      where: { id: contractId, userId },
+      data: {
+        metadata: parsed,
+      },
+    });
   } catch (error) {
     console.error("AI Analysis error:", error);
     aiNotify("ai:analysis_complete", { userId, error: "AI analysis failed" });

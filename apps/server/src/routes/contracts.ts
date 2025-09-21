@@ -12,8 +12,6 @@ router.post("/", async (req, res) => {
     const { clientName, data, status, userId } = req.body;
 
     const contract = await prisma.contract.create({
-      // After removing `contractId` from schema, generated types will not require it. Until then,
-      // keep this cast to satisfy types pre-migration.
       data: {
         clientName,
         data,

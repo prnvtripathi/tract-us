@@ -2,6 +2,7 @@ import { Router } from "express";
 import { uploadToS3 } from "@/lib/s3";
 import multer from "multer";
 import { PrismaClient, ContractStatus } from "prisma/generated";
+import { startContractAnalysis } from "@/lib/ai";
 
 const upload = multer();
 const prisma = new PrismaClient();
@@ -9,7 +10,6 @@ const router: Router = Router();
 
 // constants
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-let FILE_URL = null; // placeholder for file URL
 
 // POST /api/ai/analyze - Upload PDF for AI processing
 // Expects 'file' in multipart/form-data
@@ -28,9 +28,8 @@ router.post("/analyze", upload.single("file"), async (req, res) => {
     }
 
     const fileUrl = await uploadToS3(req.file, userId);
+
     const contract = await prisma.contract.create({
-      // After removing `contractId` from schema, generated types will not require it. Until then,
-      // keep this cast to satisfy types pre-migration.
       data: {
         clientName,
         data,
@@ -39,11 +38,13 @@ router.post("/analyze", upload.single("file"), async (req, res) => {
         fileUrl,
       } as any,
     });
-    FILE_URL = fileUrl; // store the file URL
+
+    startContractAnalysis(fileUrl, userId, contract.id);
+
     res.json({
       success: true,
+      message: "Analysis started",
       fileUrl,
-      message: "File uploaded successfully",
     });
   } catch (error) {
     console.error("Error uploading file:", error);
