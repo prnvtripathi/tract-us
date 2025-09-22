@@ -83,6 +83,24 @@ router.get("/:id", async (req, res) => {
   }
 });
 
+// PUT /api/contracts/finalize - Mark contract as finalized
+router.put("/finalize", async (req, res) => {
+  try {
+    const { id } = req.body;
+    const contract = await prisma.contract.update({
+      where: { id },
+      data: { status: ContractStatus.FINALIZED },
+    });
+
+    if (!contract) return res.status(404).json({ error: "Contract not found" });
+
+    notifyContractFinalized(id);
+    res.json(contract);
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 // PUT /api/contracts/:id - Update contract
 router.put("/:id", async (req, res) => {
   try {
@@ -115,25 +133,6 @@ router.delete("/:id", async (req, res) => {
     }
     await prisma.contract.delete({ where: { id, userId } });
     res.status(204).send();
-  } catch (err: any) {
-    res.status(400).json({ error: err.message });
-  }
-});
-
-// PUT /api/contracts/:id/finalize - Mark contract as finalized
-router.put("/:id/finalize", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { userId } = req.body;
-    const contract = await prisma.contract.update({
-      where: { id, userId },
-      data: { status: ContractStatus.FINALIZED },
-    });
-
-    if (!contract) return res.status(404).json({ error: "Contract not found" });
-
-    notifyContractFinalized(id);
-    res.json(contract);
   } catch (err: any) {
     res.status(400).json({ error: err.message });
   }
