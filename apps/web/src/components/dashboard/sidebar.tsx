@@ -71,17 +71,19 @@ export function AppSidebar() {
     return (
         <Sidebar variant="floating" collapsible="icon">
             <SidebarHeader>
-                <div className={`flex items-center space-x-2 ${isSidebarOpen ? "justify-start" : "justify-center"} p-4`}>
-                    <h1 className="text-xl font-bold">
-                        {isSidebarOpen ? (
-                            <>
-                                Tract<span className="text-primary">Us</span>
-                            </>
-                        ) : (
-                            <>T<span className="text-primary">U</span></>
-                        )}
-                    </h1>
-                </div>
+                <Link href={"/"}>
+                    <div className={`flex items-center space-x-2 ${isSidebarOpen ? "justify-start" : "justify-center"} p-4`}>
+                        <h1 className="text-xl font-bold">
+                            {isSidebarOpen ? (
+                                <>
+                                    Tract<span className="text-primary">Us</span>
+                                </>
+                            ) : (
+                                <>T<span className="text-primary">U</span></>
+                            )}
+                        </h1>
+                    </div>
+                </Link>
             </SidebarHeader>
 
             <SidebarContent>
