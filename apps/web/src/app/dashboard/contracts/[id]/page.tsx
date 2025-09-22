@@ -25,6 +25,7 @@ export default function ContractDetailPage() {
     const [analysisInProgress, setAnalysisInProgress] = useState(false);
     const [progress, setProgress] = useState(0);
     const [logs, setLogs] = useState<string[]>([]);
+    const [currentStep, setCurrentStep] = useState<string>("");
 
     // Socket event listeners for AI analysis lifecycle
     useEffect(() => {
@@ -32,44 +33,74 @@ export default function ContractDetailPage() {
 
         const onStarted = (payload: any) => {
             if (payload?.contractId !== id) return;
+            console.log("AI processing started:", payload);
             setAnalysisInProgress(true);
             setProgress(10);
-            setLogs((l) => [...l, "AI processing started"]);
+            setCurrentStep("Starting analysis...");
+            setLogs((prev) => [...prev, "🚀 AI processing started"]);
         };
+
         const onExtraction = (payload: any) => {
             if (payload?.contractId !== id) return;
+            console.log("Extraction progress:", payload);
+            // In case the initial started event was missed, ensure the UI shows progress
+            setAnalysisInProgress(true);
             setProgress(40);
-            setLogs((l) => [...l, payload?.progress || "Text extraction complete"]);
+            setCurrentStep("Extracting text from document...");
+            setLogs((prev) => [...prev, `📄 ${payload?.progress || "Text extraction complete"}`]);
         };
+
         const onConfidence = (payload: any) => {
             if (payload?.contractId !== id) return;
+            console.log("Confidence update:", payload);
+            // Ensure progress UI remains visible even if 'started' was missed
+            setAnalysisInProgress(true);
             setProgress(70);
+            setCurrentStep("Calculating confidence score...");
             if (payload?.confidence != null) {
-                setLogs((l) => [...l, `Confidence score received: ${Number(payload.confidence).toFixed(2)}`]);
+                setLogs((prev) => [...prev, `🎯 Confidence score: ${Number(payload.confidence).toFixed(2)}`]);
             } else {
-                setLogs((l) => [...l, "Confidence score updated"]);
+                setLogs((prev) => [...prev, "🎯 Confidence score updated"]);
             }
         };
+
         const onSuggestion = (payload: any) => {
             if (payload?.contractId !== id) return;
+            console.log("Suggestion generated:", payload);
+            // Ensure progress UI remains visible even if 'started' was missed
+            setAnalysisInProgress(true);
             setProgress(85);
+            setCurrentStep("Generating recommendations...");
             const count = Array.isArray(payload?.suggestions) ? payload.suggestions.length : 0;
-            setLogs((l) => [...l, `Generated ${count} recommendation${count === 1 ? "" : "s"}`]);
+            setLogs((prev) => [...prev, `💡 Generated ${count} recommendation${count === 1 ? "" : "s"}`]);
         };
+
         const onComplete = async (payload: any) => {
             if (payload?.contractId !== id) return;
+            console.log("Analysis complete:", payload);
             setProgress(100);
-            setLogs((l) => [...l, payload?.error ? `Analysis failed: ${payload.error}` : "Analysis complete"]);
-            setAnalysisInProgress(false);
+            setCurrentStep(payload?.error ? "Analysis failed" : "Analysis complete!");
+            setLogs((prev) => [...prev, payload?.error ? `❌ Analysis failed: ${payload.error}` : "✅ Analysis complete"]);
+
+            // Wait a moment before hiding the progress to show completion
+            setTimeout(() => {
+                setAnalysisInProgress(false);
+                setCurrentStep("");
+            }, 2000);
+
             // Refresh contract to load metadata
             await refetch();
         };
 
+        // Listen to socket events
         socket.on("ai:processing_started", onStarted);
         socket.on("ai:extraction_progress", onExtraction);
         socket.on("ai:confidence_update", onConfidence);
         socket.on("ai:suggestion_generated", onSuggestion);
         socket.on("ai:analysis_complete", onComplete);
+
+        // Ask server for current state in case we missed early events
+        socket.emit("ai:state_request", { contractId: id });
 
         return () => {
             socket.off("ai:processing_started", onStarted);
@@ -80,13 +111,13 @@ export default function ContractDetailPage() {
         };
     }, [socket, id, refetch]);
 
-    // If metadata already exists, ensure progress shows as complete
+    // Initialize progress if contract already has metadata
     useEffect(() => {
-        if (contract?.metadata) {
+        if (contract?.metadata && JSON.stringify(contract.metadata) !== "{}" && !analysisInProgress) {
             setProgress(100);
-            setAnalysisInProgress(false);
+            setLogs((prev) => prev.length === 0 ? ["✅ Analysis previously completed"] : prev);
         }
-    }, [contract?.metadata]);
+    }, [contract?.metadata, analysisInProgress]);
 
     const copyContractId = async () => {
         if (contract?.id) {
@@ -122,7 +153,6 @@ export default function ContractDetailPage() {
         );
     }
 
-
     const contractData = typeof contract.data === "string" ? contract.data : JSON.parse(JSON.stringify(contract.data, null, 2))
     // check if contractData has a content property (for parsed PDFs)
     const isString = typeof contractData === "string"
@@ -134,6 +164,8 @@ export default function ContractDetailPage() {
             return { content: contractData };
         }
     })() : contractData;
+
+    const hasMetadata = contract.metadata && JSON.stringify(contract.metadata) !== "{}";
 
     return (
         <main className="container mx-auto p-6 max-w-4xl space-y-6">
@@ -205,141 +237,176 @@ export default function ContractDetailPage() {
                     </Card>
 
                     {/* AI Analysis */}
-                    <Card className="border-0 shadow-md">
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <FileText className="h-5 w-5 text-primary" />
-                                AI Analysis
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            {analysisInProgress && (
-                                <div className="space-y-3">
-                                    <Progress value={progress} />
-                                    <ul className="text-xs text-muted-foreground list-disc pl-5 space-y-1">
-                                        {logs.map((m, i) => (
-                                            <li key={i}>{m}</li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            )}
-                            {!analysisInProgress && !contract?.metadata && (
-                                <p className="text-sm text-muted-foreground">No AI analysis available yet.</p>
-                            )}
-                            {!analysisInProgress && contract?.metadata && (
-                                <div className="space-y-4">
-                                    {/* Summary */}
-                                    {contract.metadata.summary && (
-                                        <div>
-                                            <h4 className="font-semibold mb-1">Summary</h4>
-                                            <p className="text-sm text-muted-foreground">{contract.metadata.summary}</p>
-                                        </div>
+                    {(hasMetadata || analysisInProgress || logs.length > 0) && (
+                        <Card className="border-0 shadow-md">
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <FileText className="h-5 w-5 text-primary" />
+                                    AI Analysis
+                                    {analysisInProgress && (
+                                        <Badge variant="secondary" className="ml-2 animate-pulse">
+                                            Processing...
+                                        </Badge>
                                     )}
-                                    {/* Parties */}
-                                    {Array.isArray(contract.metadata.parties) && contract.metadata.parties.length > 0 && (
-                                        <div>
-                                            <h4 className="font-semibold mb-1">Parties</h4>
-                                            <div className="space-y-2">
-                                                {contract.metadata.parties.map((p: any, idx: number) => (
-                                                    <div key={idx} className="text-sm">
-                                                        <div className="font-medium">{p?.name} {p?.role ? <span className="text-muted-foreground">({p.role})</span> : null}</div>
-                                                        {p?.contact_info && <div className="text-muted-foreground">{p.contact_info}</div>}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                    {/* Dates */}
-                                    {contract.metadata.dates && (
-                                        <div>
-                                            <h4 className="font-semibold mb-1">Key Dates</h4>
-                                            <div className="grid grid-cols-2 gap-2 text-sm">
-                                                {Object.entries(contract.metadata.dates).map(([k, v]: any) => (
-                                                    <div key={k} className="flex justify-between">
-                                                        <span className="text-muted-foreground capitalize">{k.replace(/_/g, " ")}</span>
-                                                        <span>{v || "—"}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                    {/* Obligations */}
-                                    {Array.isArray(contract.metadata.obligations) && contract.metadata.obligations.length > 0 && (
-                                        <div>
-                                            <h4 className="font-semibold mb-1">Obligations</h4>
-                                            <ul className="list-disc pl-5 space-y-1 text-sm">
-                                                {contract.metadata.obligations.map((o: any, idx: number) => (
-                                                    <li key={idx}>
-                                                        <span className="font-medium">{o?.party}:</span> {o?.text}
-                                                        {o?.deadline && <span className="text-muted-foreground"> (by {o.deadline})</span>}
-                                                        {o?.category && <span className="ml-1 px-1.5 py-0.5 text-xs rounded bg-muted">{o.category}</span>}
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        </div>
-                                    )}
-                                    {/* Financial Terms */}
-                                    {Array.isArray(contract.metadata.financial_terms) && contract.metadata.financial_terms.length > 0 && (
-                                        <div>
-                                            <h4 className="font-semibold mb-1">Financial Terms</h4>
-                                            <ul className="list-disc pl-5 space-y-1 text-sm">
-                                                {contract.metadata.financial_terms.map((f: any, idx: number) => (
-                                                    <li key={idx}>
-                                                        {f?.amount} {f?.currency} {f?.frequency ? `(${f.frequency})` : ""} — <span className="text-muted-foreground">{f?.description}</span>
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        </div>
-                                    )}
-                                    {/* Risk Assessment */}
-                                    {contract.metadata.risk_assessment && (
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                {/* Progress Section - Show when analysis is in progress or has logs */}
+                                {(analysisInProgress || logs.length > 0) && (
+                                    <div className="space-y-3">
                                         <div className="space-y-2">
-                                            <h4 className="font-semibold mb-1">Risk Assessment</h4>
-                                            <div className="text-sm">Level: <span className="font-medium">{contract.metadata.risk_assessment.risk_level}</span></div>
-                                            {Array.isArray(contract.metadata.risk_assessment.risk_factors) && (
-                                                <div>
-                                                    <div className="text-sm font-medium">Risk Factors</div>
-                                                    <ul className="list-disc pl-5 text-sm text-muted-foreground">
-                                                        {contract.metadata.risk_assessment.risk_factors.map((r: any, idx: number) => (
-                                                            <li key={idx}>{r}</li>
-                                                        ))}
-                                                    </ul>
-                                                </div>
-                                            )}
-                                            {Array.isArray(contract.metadata.risk_assessment.recommendations) && (
-                                                <div>
-                                                    <div className="text-sm font-medium">Recommendations</div>
-                                                    <ul className="list-disc pl-5 text-sm text-muted-foreground">
-                                                        {contract.metadata.risk_assessment.recommendations.map((r: any, idx: number) => (
-                                                            <li key={idx}>{r}</li>
-                                                        ))}
-                                                    </ul>
-                                                </div>
-                                            )}
+                                            <div className="flex items-center justify-between text-sm">
+                                                <span className="text-muted-foreground">
+                                                    {currentStep || "Analysis Progress"}
+                                                </span>
+                                                <span className="font-medium">{progress}%</span>
+                                            </div>
+                                            <Progress value={progress} className="h-2" />
                                         </div>
-                                    )}
-                                    {/* Confidence */}
-                                    {contract.metadata.confidence_score != null && (
-                                        <div className="text-sm">Confidence Score: <span className="font-medium">{Number(contract.metadata.confidence_score).toFixed(2)}</span></div>
-                                    )}
-                                    {/* Unclear sections */}
-                                    {Array.isArray(contract.metadata.unclear_sections) && contract.metadata.unclear_sections.length > 0 && (
-                                        <div>
-                                            <h4 className="font-semibold mb-1">Unclear Sections</h4>
-                                            <ul className="list-disc pl-5 space-y-1 text-sm">
-                                                {contract.metadata.unclear_sections.map((u: any, idx: number) => (
-                                                    <li key={idx}>
-                                                        <span className="font-medium">{u?.section}:</span> {u?.issue}
-                                                        {u?.priority && <span className="ml-1 text-muted-foreground">({u.priority})</span>}
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
+
+                                        {logs.length > 0 && (
+                                            <div className="bg-muted/30 rounded-lg p-3 max-h-32 overflow-y-auto">
+                                                <div className="text-xs font-medium text-muted-foreground mb-2">
+                                                    Activity Log:
+                                                </div>
+                                                <ul className="text-xs text-muted-foreground space-y-1">
+                                                    {logs.map((log, i) => (
+                                                        <li key={i} className="flex items-start gap-1">
+                                                            <span className="opacity-50 shrink-0">•</span>
+                                                            <span>{log}</span>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Analysis Results - Show when not in progress and has metadata */}
+                                {!analysisInProgress && hasMetadata && (
+                                    <div className="space-y-4">
+                                        {/* Summary */}
+                                        {contract.metadata.summary && (
+                                            <div>
+                                                <h4 className="font-semibold mb-1">Summary</h4>
+                                                <p className="text-sm text-muted-foreground">{contract.metadata.summary}</p>
+                                            </div>
+                                        )}
+                                        {/* Parties */}
+                                        {Array.isArray(contract.metadata.parties) && contract.metadata.parties.length > 0 && (
+                                            <div>
+                                                <h4 className="font-semibold mb-1">Parties</h4>
+                                                <div className="space-y-2">
+                                                    {contract.metadata.parties.map((p: any, idx: number) => (
+                                                        <div key={idx} className="text-sm">
+                                                            <div className="font-medium">{p?.name} {p?.role ? <span className="text-muted-foreground">({p.role})</span> : null}</div>
+                                                            {p?.contact_info && <div className="text-muted-foreground">{p.contact_info}</div>}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                        {/* Dates */}
+                                        {contract.metadata.dates && (
+                                            <div>
+                                                <h4 className="font-semibold mb-1">Key Dates</h4>
+                                                <div className="grid grid-cols-2 gap-2 text-sm">
+                                                    {Object.entries(contract.metadata.dates).map(([k, v]: any) => (
+                                                        <div key={k} className="flex justify-between">
+                                                            <span className="text-muted-foreground capitalize">{k.replace(/_/g, " ")}</span>
+                                                            <span>{v || "—"}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                        {/* Obligations */}
+                                        {Array.isArray(contract.metadata.obligations) && contract.metadata.obligations.length > 0 && (
+                                            <div>
+                                                <h4 className="font-semibold mb-1">Obligations</h4>
+                                                <ul className="list-disc pl-5 space-y-1 text-sm">
+                                                    {contract.metadata.obligations.map((o: any, idx: number) => (
+                                                        <li key={idx}>
+                                                            <span className="font-medium">{o?.party}:</span> {o?.text}
+                                                            {o?.deadline && <span className="text-muted-foreground"> (by {o.deadline})</span>}
+                                                            {o?.category && <span className="ml-1 px-1.5 py-0.5 text-xs rounded bg-muted">{o.category}</span>}
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
+                                        {/* Financial Terms */}
+                                        {Array.isArray(contract.metadata.financial_terms) && contract.metadata.financial_terms.length > 0 && (
+                                            <div>
+                                                <h4 className="font-semibold mb-1">Financial Terms</h4>
+                                                <ul className="list-disc pl-5 space-y-1 text-sm">
+                                                    {contract.metadata.financial_terms.map((f: any, idx: number) => (
+                                                        <li key={idx}>
+                                                            {f?.amount} {f?.currency} {f?.frequency ? `(${f.frequency})` : ""} — <span className="text-muted-foreground">{f?.description}</span>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
+                                        {/* Risk Assessment */}
+                                        {contract.metadata.risk_assessment && (
+                                            <div className="space-y-2">
+                                                <h4 className="font-semibold mb-1">Risk Assessment</h4>
+                                                <div className="text-sm">Level: <span className="font-medium">{contract.metadata.risk_assessment.risk_level}</span></div>
+                                                {Array.isArray(contract.metadata.risk_assessment.risk_factors) && (
+                                                    <div>
+                                                        <div className="text-sm font-medium">Risk Factors</div>
+                                                        <ul className="list-disc pl-5 text-sm text-muted-foreground">
+                                                            {contract.metadata.risk_assessment.risk_factors.map((r: any, idx: number) => (
+                                                                <li key={idx}>{r}</li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
+                                                )}
+                                                {Array.isArray(contract.metadata.risk_assessment.recommendations) && (
+                                                    <div>
+                                                        <div className="text-sm font-medium">Recommendations</div>
+                                                        <ul className="list-disc pl-5 text-sm text-muted-foreground">
+                                                            {contract.metadata.risk_assessment.recommendations.map((r: any, idx: number) => (
+                                                                <li key={idx}>{r}</li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                        {/* Confidence */}
+                                        {contract.metadata.confidence_score != null && (
+                                            <div className="text-sm">Confidence Score: <span className="font-medium">{Number(contract.metadata.confidence_score).toFixed(2)}</span></div>
+                                        )}
+                                        {/* Unclear sections */}
+                                        {Array.isArray(contract.metadata.unclear_sections) && contract.metadata.unclear_sections.length > 0 && (
+                                            <div>
+                                                <h4 className="font-semibold mb-1">Unclear Sections</h4>
+                                                <ul className="list-disc pl-5 space-y-1 text-sm">
+                                                    {contract.metadata.unclear_sections.map((u: any, idx: number) => (
+                                                        <li key={idx}>
+                                                            <span className="font-medium">{u?.section}:</span> {u?.issue}
+                                                            {u?.priority && <span className="ml-1 text-muted-foreground">({u.priority})</span>}
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* No analysis state */}
+                                {!analysisInProgress && logs.length === 0 && !hasMetadata && (
+                                    <div className="text-center py-8">
+                                        <FileText className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                                        <p className="text-sm text-muted-foreground">No AI analysis available yet.</p>
+                                        <p className="text-xs text-muted-foreground mt-1">Analysis will start automatically when a contract is uploaded.</p>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    )}
 
                     {/* Contract Content */}
                     <Card className="border-0 shadow-md">
@@ -396,10 +463,22 @@ export default function ContractDetailPage() {
                                         </div>
                                     </>
                                 )}
+                                {/* Analysis Status */}
+                                <Separator />
+                                {JSON.stringify(contract.metadata) !== "{}" && (
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-sm font-medium text-muted-foreground">AI Analysis</span>
+                                        <Badge
+                                            variant={analysisInProgress ? "secondary" : hasMetadata ? "default" : "outline"}
+                                            className={analysisInProgress ? "animate-pulse" : ""}
+                                        >
+                                            {analysisInProgress ? "Processing..." : hasMetadata ? "Complete" : "Pending"}
+                                        </Badge>
+                                    </div>
+                                )}
                             </div>
                         </CardContent>
                     </Card>
-
                 </div>
             </div>
         </main>
