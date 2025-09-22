@@ -120,4 +120,23 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
+// PUT /api/contracts/:id/finalize - Mark contract as finalized
+router.put("/:id/finalize", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { userId } = req.body;
+    const contract = await prisma.contract.update({
+      where: { id, userId },
+      data: { status: ContractStatus.FINALIZED },
+    });
+
+    if (!contract) return res.status(404).json({ error: "Contract not found" });
+
+    notifyContractFinalized(id);
+    res.json(contract);
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 export default router;
