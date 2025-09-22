@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-
+import FileDropzone from "./file-dropzone";
 
 const contractSchema = z.object({
     clientName: z.string().min(1, "Client name is required"),
@@ -94,72 +94,79 @@ export function ContractUpload() {
                 <CardTitle>Upload Contract</CardTitle>
             </CardHeader>
             <CardContent>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
-                    {/* Client Name */}
-                    <div className="flex flex-col gap-2">
-                        <Label htmlFor="clientName">Client Name</Label>
-                        <Input
-                            id="clientName"
-                            {...form.register("clientName")}
-                            placeholder="Enter client name"
-                        />
-                        {form.formState.errors.clientName && (
-                            <span className="text-sm text-red-500">{form.formState.errors.clientName.message}</span>
-                        )}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* Form Section */}
+                    <div>
+                        <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
+                            {/* Client Name */}
+                            <div className="flex flex-col gap-2">
+                                <Label htmlFor="clientName">Client Name</Label>
+                                <Input
+                                    id="clientName"
+                                    {...form.register("clientName")}
+                                    placeholder="Enter client name"
+                                />
+                                {form.formState.errors.clientName && (
+                                    <span className="text-sm text-red-500">{form.formState.errors.clientName.message}</span>
+                                )}
+                            </div>
+
+                            {/* Contract Data */}
+                            <div className="flex flex-col gap-2">
+                                <Label htmlFor="data">Contract Data (Text or JSON)</Label>
+                                <Textarea
+                                    id="data"
+                                    rows={6}
+                                    {...form.register("data")}
+                                    placeholder='Enter contract text or {"key":"value"}'
+                                    className="resize-none"
+                                />
+                                {form.formState.errors.data && (
+                                    <span className="text-sm text-red-500">{form.formState.errors.data.message}</span>
+                                )}
+                            </div>
+
+                            {/* Status */}
+                            <div className="flex flex-col gap-2">
+                                <Label>Status</Label>
+                                <Select
+                                    value={form.watch("status")}
+                                    onValueChange={(val) => form.setValue("status", val as "DRAFT" | "FINALIZED")}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select status" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="DRAFT">Draft</SelectItem>
+                                        <SelectItem value="FINALIZED">Finalized</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                {form.formState.errors.status && (
+                                    <span className="text-sm text-red-500">{form.formState.errors.status.message}</span>
+                                )}
+                            </div>
+
+                            {/* Submit */}
+                            <Button
+                                type="submit"
+                                disabled={createContract.isPending || analyzeContract.isPending}
+                                className="mt-4"
+                            >
+                                {createContract.isPending || analyzeContract.isPending
+                                    ? "Saving..."
+                                    : file
+                                        ? "Upload & Analyze with AI"
+                                        : "Save Contract"
+                                }
+                            </Button>
+                        </form>
                     </div>
 
-                    {/* Contract Data */}
-                    <div className="flex flex-col gap-2">
-                        <Label htmlFor="data">Contract Data (Text or JSON)</Label>
-                        <Textarea
-                            id="data"
-                            rows={8}
-                            {...form.register("data")}
-                            placeholder='Enter contract text or {"key":"value"}'
-                            className="resize-none"
-                        />
-                        {form.formState.errors.data && (
-                            <span className="text-sm text-red-500">{form.formState.errors.data.message}</span>
-                        )}
+                    {/* File Upload Section */}
+                    <div>
+                        <FileDropzone file={file} setFile={setFile} />
                     </div>
-
-                    {/* Optional File Upload */}
-                    <div className="flex flex-col gap-2">
-                        <Label htmlFor="file">Upload PDF (optional)</Label>
-                        <Input
-                            id="file"
-                            type="file"
-                            accept="application/pdf"
-                            onChange={(e) => setFile(e.target.files?.[0] || null)}
-                        />
-                        <p className="text-xs text-muted-foreground">If provided, the file will be analyzed by AI and progress will be shown on the details page.</p>
-                    </div>
-
-                    {/* Status */}
-                    <div className="flex flex-col gap-2">
-                        <Label>Status</Label>
-                        <Select
-                            value={form.watch("status")}
-                            onValueChange={(val) => form.setValue("status", val as "DRAFT" | "FINALIZED")}
-                        >
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select status" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="DRAFT">Draft</SelectItem>
-                                <SelectItem value="FINALIZED">Finalized</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        {form.formState.errors.status && (
-                            <span className="text-sm text-red-500">{form.formState.errors.status.message}</span>
-                        )}
-                    </div>
-
-                    {/* Submit */}
-                    <Button type="submit" disabled={createContract.isPending || analyzeContract.isPending}>
-                        {createContract.isPending || analyzeContract.isPending ? "Saving..." : file ? "Upload & Analyze" : "Save Contract"}
-                    </Button>
-                </form>
+                </div>
             </CardContent>
         </Card>
     );

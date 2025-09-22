@@ -123,6 +123,18 @@ export default function ContractDetailPage() {
     }
 
 
+    const contractData = typeof contract.data === "string" ? contract.data : JSON.parse(JSON.stringify(contract.data, null, 2))
+    // check if contractData has a content property (for parsed PDFs)
+    const isString = typeof contractData === "string"
+
+    const parsedContractData = isString ? (() => {
+        try {
+            return JSON.parse(contractData);
+        } catch {
+            return { content: contractData };
+        }
+    })() : contractData;
+
     return (
         <main className="container mx-auto p-6 max-w-4xl space-y-6">
             {/* Header */}
@@ -340,7 +352,7 @@ export default function ContractDetailPage() {
                         <CardContent>
                             <div className="prose prose-sm max-w-none">
                                 <div className="whitespace-pre-wrap text-sm leading-relaxed p-4 bg-muted/30 rounded-lg border-l-4 border-primary/20">
-                                    {contract?.data?.content || (
+                                    {parsedContractData.content || (
                                         <div className="text-muted-foreground italic flex items-center gap-2">
                                             <FileText className="h-4 w-4" />
                                             No content available

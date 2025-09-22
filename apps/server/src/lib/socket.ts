@@ -34,7 +34,7 @@ export const notifyContractFinalized = (id: string) => {
 
 export const aiNotify = (event: string, data: any) => {
   if (io) {
-    console.log(`Emitting event ${event} with data:`, data);
     io.emit(event, data);
+    console.log(`Emitted event ${event} with data:`, data);
   }
 };
