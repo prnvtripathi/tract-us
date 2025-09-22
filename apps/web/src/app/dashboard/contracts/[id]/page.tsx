@@ -168,10 +168,10 @@ export default function ContractDetailPage() {
     const hasMetadata = contract.metadata && JSON.stringify(contract.metadata) !== "{}";
 
     return (
-        <main className="container mx-auto p-6 max-w-4xl space-y-6">
+        <main className="space-y-4">
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div className="flex items-center gap-4">
+                <div className="flex items-start gap-4">
                     <Button
                         variant="ghost"
                         size="sm"
@@ -181,10 +181,7 @@ export default function ContractDetailPage() {
                         <ArrowLeft className="h-4 w-4" />
                     </Button>
                     <div>
-                        <h1 className="text-3xl font-bold tracking-tight">Contract Details</h1>
-                        <p className="text-muted-foreground mt-1">
-                            View and manage contract information
-                        </p>
+                        <h1 className="text-2xl font-bold">Contract Details</h1>
                     </div>
                 </div>
                 <div className="flex gap-2">
