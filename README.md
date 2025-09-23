@@ -197,3 +197,9 @@ tract-us-assignment/
 - Socket connection issues: confirm the API is on `http://localhost:4000` (or update `NEXT_PUBLIC_SERVER_URL`).
 - Prisma errors: verify `DATABASE_URL` is valid and database is reachable; re-run `pnpm db:generate` if needed.
 - S3 upload failures: check S3 credentials, region, and bucket name; ensure file size is below 5 MB.
+
+
+### Test Access Credentials
+You can use the following test credentials to log in to the application:
+- Email: prnvtripathi14@gmail.com
+- Password: TestTest.123
