@@ -1,0 +1,38 @@
+# Node / Pnpm
+node_modules
+.pnpm-store
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Turborepo / build artifacts
+dist
+.next
+out
+.cache
+turbo
+*.tsbuildinfo
+
+# Git / Editor
+.git
+.gitignore
+Dockerfile
+Dockerfile.dev
+docker-compose.yml
+.vscode
+.idea
+
+# OS
+.DS_Store
+
+
+# env
+.env
+.env.local
+.env.*.local
+.env.test
+.env.production
+.env.development
+*.env
+*.local
+*.secret
