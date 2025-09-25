@@ -35,6 +35,7 @@ jobs:
       - name: Build Web Docker image
         run: |
           docker build --platform=linux/amd64 \
+            --build-arg NEXT_PUBLIC_SERVER_URL=${{ secrets.NEXT_PUBLIC_SERVER_URL }} \
             -t ${{ env.REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ env.REPO }}/web:latest \
             -f apps/web/Dockerfile .
 
@@ -50,7 +51,6 @@ jobs:
             --platform managed \
             --region ${{ env.REGION }} \
             --allow-unauthenticated \
-            --set-env-vars NEXT_PUBLIC_SERVER_URL=${{ secrets.NEXT_PUBLIC_SERVER_URL }}
 
       # --- Build & Push Server ---
       - name: Build Server Docker image

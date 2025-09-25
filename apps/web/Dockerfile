@@ -16,6 +16,10 @@ FROM deps AS builder
 
 WORKDIR /app/apps/web
 COPY apps/web/ .
+
+ARG NEXT_PUBLIC_SERVER_URL
+ENV NEXT_PUBLIC_SERVER_URL=$NEXT_PUBLIC_SERVER_URL
+
 RUN pnpm run build
 
 # ---------- Run Stage ----------
