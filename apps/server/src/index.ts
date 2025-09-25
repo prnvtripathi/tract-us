@@ -5,10 +5,10 @@ import { createServer } from "http";
 import { toNodeHandler } from "better-auth/node";
 import morgan from "morgan";
 
-import { auth } from "./lib/auth";
-import { default as contractsRouter } from "./routes/contracts";
-import { default as aiRouter } from "./routes/ai";
-import { initSocket } from "./lib/socket";
+import { auth } from "./lib/auth.js";
+import { default as contractsRouter } from "./routes/contracts.js";
+import { default as aiRouter } from "./routes/ai.js";
+import { initSocket } from "./lib/socket.js";
 
 const app = express();
 

@@ -1,8 +1,8 @@
 import { Groq } from "groq-sdk";
-import { aiNotify } from "./socket";
-import { extractTextFromPdf } from "@/lib/pdf";
-import { analyzePrompt } from "./prompts";
-import { PrismaClient, ContractStatus } from "prisma/generated";
+import { aiNotify } from "./socket.js";
+import { extractTextFromPdf } from "./pdf.js";
+import { analyzePrompt } from "./prompts.js";
+import { PrismaClient, ContractStatus } from "../../prisma/generated/index.js";
 
 const prisma = new PrismaClient();
 

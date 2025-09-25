@@ -1,8 +1,8 @@
 import { Router } from "express";
-import { uploadToS3 } from "@/lib/s3";
+import { uploadToS3 } from "../lib/s3.js";
 import multer from "multer";
-import { PrismaClient, ContractStatus } from "prisma/generated";
-import { startContractAnalysis } from "@/lib/ai";
+import { PrismaClient, ContractStatus } from "../../prisma/generated/index.js";
+import { startContractAnalysis } from "../lib/ai.js";
 
 const upload = multer();
 const prisma = new PrismaClient();

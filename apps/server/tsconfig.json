@@ -11,9 +11,12 @@
 			"@/*": ["./src/*"],
 			"prisma/*": ["./prisma/*"]
 		},
+		"rootDir": "./src",
 		"outDir": "./dist",
 		"types": ["node"],
 		"composite": true,
 		"jsx": "react-jsx"
-	}
+	},
+	"include": ["src/**/*"],
+	"exclude": ["node_modules", "dist", "prisma/**", "prisma.config.ts"]
 }

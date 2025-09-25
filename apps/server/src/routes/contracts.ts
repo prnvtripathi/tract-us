@@ -1,7 +1,7 @@
 import { Router } from "express";
-import { PrismaClient, ContractStatus } from "prisma/generated";
+import { PrismaClient, ContractStatus } from "../../prisma/generated/index.js";
 
-import { notifyContractFinalized } from "../lib/socket";
+import { notifyContractFinalized } from "../lib/socket.js";
 
 const prisma = new PrismaClient();
 const router: Router = Router();
