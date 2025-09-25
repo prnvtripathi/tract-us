@@ -88,6 +88,9 @@ export default function ContractDetailPage() {
                 setCurrentStep("");
             }, 2000);
 
+            // reload the page to fetch updated contract data
+            router.refresh();
+
             // Refresh contract to load metadata
             await refetch();
         };
