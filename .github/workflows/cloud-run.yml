@@ -8,7 +8,7 @@ on:
 
 env:
   REGION: asia-south2
-  REPO: tract-us
+  REPO: my-repo
 
 jobs:
   deploy:
